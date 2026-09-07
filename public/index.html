@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<title>Restaurant Battle — 10 vs 10</title>
+<style>
+:root{--bg:#08101d;--panel:#111b2d;--panel2:#17243a;--line:#2a3b57;--text:#eef5ff;--muted:#8ea2bf;--accent:#5ee7c8;--gold:#ffd36a;--red:#ff6b78;--blue:#5da9ff;--shadow:0 16px 50px #0008}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:radial-gradient(circle at 50% 0,#162845,#08101d 55%);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,select{font:inherit}button{border:0;color:inherit;cursor:pointer}
+#app{width:100%;height:100%;position:relative}
+.screen{position:absolute;inset:0;display:none}.screen.active{display:flex}
+#title{align-items:center;justify-content:center;padding:24px}
+.titleCard{width:min(980px,96vw);padding:34px;border:1px solid #ffffff18;border-radius:28px;background:linear-gradient(145deg,#13213aee,#0b1323ee);box-shadow:var(--shadow);text-align:center}
+.logo{font-size:clamp(34px,6vw,72px);font-weight:1000;letter-spacing:-.06em;line-height:.95}
+.logo b{color:var(--accent)}.sub{color:var(--muted);margin:14px 0 26px;font-size:16px}
+.menuGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.btn{min-height:52px;padding:12px 18px;border-radius:15px;background:linear-gradient(180deg,#223654,#17263e);border:1px solid #ffffff15;box-shadow:0 6px 18px #0003;font-weight:800;transition:.16s transform,.16s filter}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.12)}.btn.primary{background:linear-gradient(135deg,#43dcb7,#2788cf);color:#06121a}.btn.gold{background:linear-gradient(135deg,#ffd96d,#f39d46);color:#211508}
+.small{font-size:12px;color:var(--muted)}.notice{padding:10px 12px;border-radius:12px;background:#ffffff08;color:#b8c8dd;margin-top:14px;text-align:left}
+#setup{align-items:center;justify-content:center;padding:20px}.setupCard{width:min(1050px,96vw);max-height:92vh;overflow:auto;background:#0d1728;border:1px solid #ffffff16;border-radius:24px;padding:24px;box-shadow:var(--shadow)}
+h2{margin:0 0 8px}h3{margin:20px 0 8px}.form{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.field{background:#ffffff06;padding:12px;border-radius:14px;border:1px solid #ffffff0d}.field label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}.field select,.field input{width:100%;background:#0a1220;color:var(--text);border:1px solid var(--line);padding:10px;border-radius:10px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+#game{display:none;flex-direction:column;background:#08101d}.topbar{height:66px;flex:0 0 66px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:8px 14px;background:#0b1424;border-bottom:1px solid #ffffff10;z-index:4}
+.teamScore{display:flex;gap:10px;align-items:center;font-weight:900}.teamScore.right{justify-content:flex-end}.score{font-size:24px}.pill{padding:5px 9px;border-radius:999px;background:#ffffff0c;font-size:11px;color:var(--muted)}.clock{font-weight:1000;font-size:24px}.clock.warn{color:var(--red)}
+.gameBody{display:grid;grid-template-columns:260px 1fr 320px;min-height:0;flex:1}.side{background:#0b1423;border-right:1px solid #ffffff0d;overflow:auto;padding:12px}.rightSide{border-left:1px solid #ffffff0d;border-right:0}.panel{background:#ffffff05;border:1px solid #ffffff0b;border-radius:15px;padding:11px;margin-bottom:10px}.panelTitle{font-size:12px;color:#9eb2cc;font-weight:900;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}.order{padding:9px;border-radius:11px;background:#101d30;margin:6px 0;border-left:3px solid var(--accent)}.order.hot{border-left-color:var(--red)}.order small{color:var(--muted)}.order .tag{float:right;font-size:10px}.staff{display:flex;align-items:center;gap:8px;padding:7px;border-radius:10px}.staff.active{background:#ffffff0b}.avatar{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#5ee7c8,#5da9ff);color:#06121a;font-weight:1000}
+.stageWrap{position:relative;min-width:0;min-height:0;display:flex;align-items:stretch;justify-content:center;background:#07101b}
+#gameCanvas{width:100%;height:100%;display:block;image-rendering:auto}
+.hudBottom{position:absolute;left:14px;right:14px;bottom:12px;display:flex;gap:8px;justify-content:space-between;align-items:flex-end;pointer-events:none}.hudBox{pointer-events:auto;background:#0b1525dd;border:1px solid #ffffff15;backdrop-filter:blur(8px);border-radius:16px;padding:10px;box-shadow:0 8px 30px #0005}.actionBar{display:flex;gap:7px;flex-wrap:wrap}.action{min-width:82px;padding:9px;border-radius:11px;background:#172842;border:1px solid #ffffff12;font-size:11px;font-weight:900}.action.selected{outline:2px solid var(--accent);background:#1b3b43}.action:disabled{opacity:.45;cursor:not-allowed}.combo{font-weight:1000;font-size:18px;color:var(--gold)}
+.toastLayer{position:absolute;inset:0;pointer-events:none;overflow:hidden}.toast{position:absolute;left:50%;top:28%;transform:translate(-50%,-50%);font-weight:1000;font-size:30px;text-shadow:0 5px 20px #000;animation:toast 900ms ease-out forwards}.toast.perfect{color:#ffe67d}.toast.great{color:#5ee7c8}.toast.bad{color:#ff6b78}@keyframes toast{0%{opacity:0;transform:translate(-50%,20%) scale(.7)}20%{opacity:1}100%{opacity:0;transform:translate(-50%,-120%) scale(1.25)}}
+#result{align-items:center;justify-content:center;padding:20px}.resultCard{width:min(950px,96vw);background:#0d1728;border:1px solid #ffffff18;border-radius:24px;padding:26px;box-shadow:var(--shadow)}.resultWinner{font-size:42px;font-weight:1000;text-align:center}.resultGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.resultTeam{padding:16px;border-radius:16px;background:#ffffff06;border:1px solid #ffffff0c}.bar{height:9px;background:#ffffff0b;border-radius:99px;overflow:hidden}.bar>i{display:block;height:100%;background:linear-gradient(90deg,#43dcb7,#5da9ff)}
+#observe{display:none;flex-direction:column;background:#070e18}.obsTop{height:60px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:#0c1525;border-bottom:1px solid #ffffff10}.obsGrid{flex:1;display:grid;grid-template-columns:1fr 1fr;min-height:0}.obsPane{position:relative;min-width:0;min-height:0}.obsPane:first-child{border-right:2px solid #ffffff18}.obsPane canvas{width:100%;height:100%;display:block}.obsLabel{position:absolute;top:10px;left:10px;padding:7px 10px;border-radius:9px;background:#0b1425dd;font-weight:1000}
+.modal{position:absolute;inset:0;display:none;place-items:center;background:#020712aa;z-index:20}.modal.open{display:grid}.modalCard{width:min(720px,94vw);max-height:86vh;overflow:auto;background:#0d1728;border:1px solid #ffffff18;border-radius:20px;padding:20px;box-shadow:var(--shadow)}
+.recipeRow{display:grid;grid-template-columns:1fr auto;gap:10px;padding:9px;border-radius:10px;background:#ffffff05;margin:6px 0}.codebox{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px;white-space:pre-wrap;background:#07101b;padding:12px;border-radius:12px;max-height:300px;overflow:auto}
+@media(max-width:1000px){.gameBody{grid-template-columns:210px 1fr 230px}.form{grid-template-columns:1fr 1fr}.menuGrid{grid-template-columns:1fr 1fr}}
+@media(max-width:760px){.gameBody{grid-template-columns:1fr}.side{display:none}.topbar{grid-template-columns:1fr auto 1fr}.resultGrid{grid-template-columns:1fr}.hudBottom{left:6px;right:6px}.action{min-width:65px}.obsGrid{grid-template-columns:1fr;grid-template-rows:1fr 1fr}.obsPane:first-child{border-right:0;border-bottom:2px solid #ffffff18}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!--
+============================================================
+RESTAURANT BATTLE — SINGLE SOURCE OF TRUTH PRODUCTION MANUAL
+============================================================
+Design: fast but readable restaurant-management competition. State is data-driven.
+Visual: dark navy restaurant-tech UI + warm food accents; 8px spacing grid; rounded
+surfaces; bold silhouettes; no external asset is required.
+Assets: use Asset IDs, never filenames. Fallback renderer always exists.
+Network: local simulation is authoritative offline. Online transport is WebRTC P2P;
+signaling is external and only exchanges SDP/ICE/session metadata. Cloudflare is
+never used for per-frame gameplay. Host is authoritative and clients send intents.
+Data: recipes/assets are JSON, versioned and hashable. Never eval received data.
+Security: size/type/range/schema/hash checks before custom content registration.
+Accessibility: keyboard shortcuts, high contrast surfaces, text labels, no color-only
+meaning. Performance: Canvas rendering, fixed simulation step, bounded arrays.
+Naming: lower_snake_case for files, dot.namespace IDs for runtime assets/recipes.
+Responsive: desktop-first, collapsible side panels under 760px.
+Audio: Web Audio synthesized fallback. External audio slots are optional.
+Error policy: catch malformed local/network data, show non-blocking notices, keep match
+running if a peer disconnects.
+Replay: event log is recorded and can be replayed in observation mode.
+============================================================
+-->
+
+<!-- =========================================================
+     USER ASSET INSERTION AREA
+     画像: ここに data:image/webp;base64,... を入れるだけ。
+     推奨サイズ:
+       character/player: 128x128px transparent
+       customer:          96x96px transparent
+       food/dish icon:    128x128px transparent
+       ingredient icon:   96x96px transparent
+       equipment:         160x160px transparent
+       background:        1920x1080px
+       UI icon:            64x64px transparent
+     目安ファイルサイズ: 個別画像 300KB以下、背景 1MB以下。
+     音: data:audio/...;base64,... を入れる。効果音は100KB以下推奨。
+     空欄ならゲーム内Canvas/SVG風の初期グラフィックが自動使用される。
+========================================================= -->
+<script>
+const USER_IMAGES = {
+  "character.chef.default": "",   // 128x128
+  "customer.normal.01": "",       // 96x96
+  "customer.vip.01": "",          // 96x96
+  "food.ramen.shoyu": "",         // 128x128
+  "food.curry": "",               // 128x128
+  "food.burger": "",              // 128x128
+  "equipment.oven.01": "",        // 160x160
+  "equipment.stove.01": "",       // 160x160
+  "ui.icon.coin": ""               // 64x64
+};
+const USER_AUDIO = {
+  click: "", order: "", cook: "", serve: "", combo: "", perfect: "", miss: "", victory: ""
+};
+const NETWORK = {
+  // Cloudflare Worker の WebSocket URL を設定するとオンラインシグナリングを有効化。
+  // 例: wss://restaurant-battle.example.workers.dev/room/ABC123
+  SIGNALING_URL: "",
+  ICE_SERVERS: [{urls:"stun:stun.l.google.com:19302"}]
+};
+</script>
+
+<div id="title" class="screen active">
+  <div class="titleCard">
+    <div class="logo">RESTAURANT <b>BATTLE</b></div>
+    <div class="sub">10 VS 10 • COOK • SERVE • MANAGE • OUTPLAY</div>
+    <div class="menuGrid">
+      <button class="btn primary" data-action="onlineQuick">🌐 今すぐオンライン</button><button class="btn" data-action="quick">🤖 CPU対戦</button>
+      <button class="btn" data-action="setup">ゲーム設定</button>
+      <button class="btn" data-action="observe">観戦モード</button>
+      <button class="btn" data-action="recipe">レシピ管理</button>
+      <button class="btn" data-action="network">オンライン接続</button>
+      <button class="btn gold" data-action="howto">遊び方</button>
+    </div>
+    <div class="notice">画像・音を入れなくても、Canvasによる初期グラフィックとWeb Audio効果音でそのまま遊べます。設定は自動保存されます。</div>
+  </div>
+</div>
+
+<div id="setup" class="screen">
+  <div class="setupCard">
+    <h2>ゲーム設定</h2><div class="small">最大10人 VS 10人。オフラインでもCPU戦は完全に動作します。</div>
+    <h3>対戦</h3>
+    <div class="form">
+      <div class="field"><label>モード</label><select id="mode"><option value="pve">プレイヤー VS CPU</option><option value="solo">ソロ経営</option><option value="pvp">プレイヤー + CPU VS CPU</option><option value="team">チーム戦</option><option value="cvc">CPU VS CPU</option></select></div>
+      <div class="field"><label>自チーム人数</label><select id="teamA"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option selected>10</option></select></div>
+      <div class="field"><label>相手チーム人数</label><select id="teamB"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option selected>10</option></select></div>
+      <div class="field"><label>難易度</label><select id="difficulty"><option value="easy">EASY</option><option value="normal" selected>NORMAL</option><option value="hard">HARD</option><option value="festival">FESTIVAL EXTREME</option></select></div>
+      <div class="field"><label>ステージ</label><select id="stage"><option value="small">小型店</option><option value="standard" selected>標準店</option><option value="large">大型店</option><option value="complex">複雑厨房</option><option value="rush">高速店舗</option><option value="festival">超高難度店舗</option></select></div>
+      <div class="field"><label>試合時間</label><select id="duration"><option value="90">90秒</option><option value="150" selected>150秒</option><option value="240">240秒</option><option value="360">360秒</option></select></div>
+    </div>
+    <h3>プレイスタイル</h3>
+    <div class="form">
+      <div class="field"><label>担当</label><select id="role"><option value="both">両方担当</option><option value="kitchen">キッチン専任</option><option value="hall">ホール専任</option></select></div>
+      <div class="field"><label>CPU性格</label><select id="aiStyle"><option value="balanced" selected>Balanced</option><option value="speed">Speed</option><option value="quality">Quality</option><option value="kitchen">Kitchen</option><option value="hall">Hall</option><option value="support">Support</option></select></div>
+      <div class="field"><label>フルスクリーン</label><button class="btn" id="fullscreenBtn">切り替え</button></div>
+    </div>
+    <div class="actions"><button class="btn" data-action="back">戻る</button><button class="btn primary" data-action="start">試合開始</button></div>
+  </div>
+</div>
+
+<div id="game" class="screen">
+  <div class="topbar">
+    <div class="teamScore"><span class="pill">TEAM A</span><span class="score" id="scoreA">0</span><span class="small" id="statsA">満足 100%</span></div>
+    <div><div class="clock" id="clock">2:30</div><div class="small" style="text-align:center" id="stageLabel">STANDARD</div><div class="small" style="text-align:center" id="roomHud">OFFLINE</div></div>
+    <div class="teamScore right"><span class="small" id="statsB">満足 100%</span><span class="score" id="scoreB">0</span><span class="pill">TEAM B</span></div>
+  </div>
+  <div class="gameBody">
+    <aside class="side"><div class="panel"><div class="panelTitle">Orders</div><div id="orders"></div></div><div class="panel"><div class="panelTitle">Staff</div><div id="staff"></div></div></aside>
+    <main class="stageWrap"><canvas id="gameCanvas"></canvas><div class="toastLayer" id="toasts"></div>
+      <div class="hudBottom"><div class="hudBox"><div class="combo" id="combo">COMBO x0</div><div class="small" id="roleLabel">両方担当</div><div class="row" style="margin-top:7px"><button class="action" data-action="data">レシピ・食材・画像</button><button class="action" data-action="network">ルーム</button></div></div>
+      <div class="hudBox"><div class="actionBar"><button class="action" data-action="take">食材を取る</button><button class="action" data-action="cook">調理する</button><button class="action" data-action="serve">提供する</button><button class="action" data-action="clean">片付け</button><button class="action" data-action="restock">補充</button><button class="action" data-action="switch">役割変更</button></div></div></div>
+    </main>
+    <aside class="side rightSide"><div class="panel"><div class="panelTitle">Kitchen Status</div><div id="kitchenStatus"></div></div><div class="panel"><div class="panelTitle">Quick Chat</div><div class="row" id="chatButtons"></div></div><div class="panel"><div class="panelTitle">Live Events</div><div id="events"></div></div></aside>
+  </div>
+</div>
+
+<div id="result" class="screen">
+  <div class="resultCard"><div class="resultWinner" id="winner">TEAM A WINS!</div><div class="small" style="text-align:center" id="resultSub"></div><div class="resultGrid" style="margin-top:18px">
+    <div class="resultTeam"><h3>TEAM A</h3><div class="score" id="finalA">0</div><div class="small">品質 / 速度 / 満足 / 効率</div><div class="bar"><i id="barA"></i></div></div>
+    <div class="resultTeam"><h3>TEAM B</h3><div class="score" id="finalB">0</div><div class="small">品質 / 速度 / 満足 / 効率</div><div class="bar"><i id="barB"></i></div></div>
+  </div><div class="actions"><button class="btn" data-action="title">タイトル</button><button class="btn" data-action="replay">リプレイ</button><button class="btn primary" data-action="rematch">再戦</button></div></div>
+</div>
+
+<div id="observe" class="screen">
+  <div class="obsTop"><b>LIVE OBSERVER • TEAM A VS TEAM B</b><div class="row"><span class="pill" id="obsScore">0 - 0</span><button class="btn" data-action="title">終了</button></div></div>
+  <div class="obsGrid"><div class="obsPane"><div class="obsLabel">TEAM A</div><canvas id="obsA"></canvas></div><div class="obsPane"><div class="obsLabel">TEAM B</div><canvas id="obsB"></canvas></div></div>
+</div>
+
+<div class="modal" id="modal"><div class="modalCard"><div id="modalContent"></div><div class="actions"><button class="btn" data-action="closeModal">閉じる</button></div></div></div>
+
+<script>
+"use strict";
+
+/* ========================= DATA LAYER ========================= */
+const STAGES={
+ small:{name:"小型店",capacity:4,spawn:.85,complexity:1,stations:4},
+ standard:{name:"標準店",capacity:6,spawn:1,complexity:1.15,stations:5},
+ large:{name:"大型店",capacity:9,spawn:1.18,complexity:1.3,stations:6},
+ complex:{name:"複雑厨房",capacity:8,spawn:1.08,complexity:1.65,stations:7},
+ rush:{name:"高速店舗",capacity:10,spawn:1.45,complexity:1.45,stations:6},
+ festival:{name:"超高難度店舗",capacity:14,spawn:1.75,complexity:2.0,stations:8}
+};
+const DIFF={
+ easy:{customer:0.75,quality:1.05,event:.65},
+ normal:{customer:1,quality:1,event:1},
+ hard:{customer:1.35,quality:.96,event:1.35},
+ festival:{customer:1.8,quality:.92,event:1.8}
+};
+const RECIPES=[
+ {recipeId:"recipe.ramen.shoyu",version:1,name:"醤油ラーメン",description:"香り高いスープと麺",category:"noodle",ingredients:["ingredient.noodle","ingredient.pork","ingredient.green_onion"],steps:["boil","cook","serve"],cookingTime:6,qualityRules:{perfect:1.0,great:.86,good:.65},price:32,score:120,icon:"food.ramen.shoyu",difficulty:2},
+ {recipeId:"recipe.curry.beef",version:1,name:"ビーフカレー",description:"濃厚ソースの定番",category:"main",ingredients:["ingredient.rice","ingredient.beef","ingredient.onion"],steps:["cut","cook","serve"],cookingTime:8,qualityRules:{perfect:1.0,great:.86,good:.65},price:36,score:135,icon:"food.curry",difficulty:2},
+ {recipeId:"recipe.burger.classic",version:1,name:"クラシックバーガー",description:"肉と野菜の高速メニュー",category:"fast",ingredients:["ingredient.bun","ingredient.beef","ingredient.lettuce"],steps:["cut","fry","assemble","serve"],cookingTime:7,qualityRules:{perfect:1.0,great:.86,good:.65},price:30,score:115,icon:"food.burger",difficulty:2},
+ {recipeId:"recipe.pancake.berry",version:1,name:"ベリーパンケーキ",description:"甘い人気メニュー",category:"dessert",ingredients:["ingredient.flour","ingredient.berry","ingredient.egg"],steps:["mix","fry","serve"],cookingTime:5,qualityRules:{perfect:1.0,great:.88,good:.68},price:28,score:105,icon:"food.pancake",difficulty:1},
+ {recipeId:"recipe.steak.plate",version:1,name:"ステーキプレート",description:"高単価・高品質",category:"premium",ingredients:["ingredient.beef","ingredient.potato","ingredient.herb"],steps:["cut","grill","plate","serve"],cookingTime:10,qualityRules:{perfect:1.0,great:.9,good:.7},price:52,score:190,icon:"food.steak",difficulty:3}
+];
+const INGREDIENTS=[
+ {id:"ingredient.noodle",name:"麺"},{id:"ingredient.pork",name:"豚肉"},{id:"ingredient.green_onion",name:"ねぎ"},
+ {id:"ingredient.rice",name:"米"},{id:"ingredient.beef",name:"牛肉"},{id:"ingredient.onion",name:"玉ねぎ"},
+ {id:"ingredient.bun",name:"バンズ"},{id:"ingredient.lettuce",name:"レタス"},{id:"ingredient.flour",name:"小麦粉"},
+ {id:"ingredient.berry",name:"ベリー"},{id:"ingredient.egg",name:"卵"},{id:"ingredient.potato",name:"じゃがいも"},{id:"ingredient.herb",name:"ハーブ"}
+];
+const ASSETS={...USER_IMAGES};
+const recipeManifest=()=>RECIPES.map(r=>({recipeId:r.recipeId,version:r.version,hash:hashObject(r)}));
+const assetManifest=()=>Object.entries(ASSETS).map(([id,data])=>({assetId:id,version:1,hash:hashObject({id,data})}));
+
+/* ========================= VALIDATION ========================= */
+function safeString(v,max=120){return typeof v==="string"&&v.length<=max?v:null}
+function validateRecipe(r){
+ if(!r||safeString(r.recipeId,80)!==r.recipeId||!/^recipe\.[a-z0-9_.-]+$/.test(r.recipeId))return false;
+ if(!Number.isInteger(r.version)||r.version<1||r.version>9999)return false;
+ if(!safeString(r.name,80)||!Array.isArray(r.ingredients)||r.ingredients.length>30||!Array.isArray(r.steps)||r.steps.length>20)return false;
+ if(!Number.isFinite(r.cookingTime)||r.cookingTime<1||r.cookingTime>120)return false;
+ if(!Number.isFinite(r.price)||r.price<0||r.price>10000)return false;
+ return true;
+}
+function validateAsset(id,data){
+ return typeof id==="string"&&id.length<=100&&/^[a-z0-9_.-]+$/.test(id)&&typeof data==="string"&&data.length<=2_000_000&&(data===""||/^data:image\/|^data:audio\//.test(data));
+}
+function hashObject(o){let s=JSON.stringify(o),h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return ("00000000"+(h>>>0).toString(16)).slice(-8)}
+
+/* ========================= AUDIO ========================= */
+const AudioSys={ctx:null,busy:false,ensure(){if(!this.ctx)this.ctx=new (window.AudioContext||window.webkitAudioContext)();if(this.ctx.state==="suspended")this.ctx.resume()},
+play(kind="click"){try{if(USER_AUDIO[kind]){const a=new Audio(USER_AUDIO[kind]);a.volume=.35;a.play().catch(()=>{});return}this.ensure();const o=this.ctx.createOscillator(),g=this.ctx.createGain();const map={click:[520,.05],order:[300,.11],cook:[180,.12],serve:[640,.09],combo:[760,.16],perfect:[980,.18],miss:[120,.2],victory:[520,.5]};const [f,d]=map[kind]||map.click;o.frequency.value=f;o.type=k==="miss"?"sawtooth":"sine";g.gain.setValueAtTime(.0001,this.ctx.currentTime);g.gain.exponentialRampToValueAtTime(.12,this.ctx.currentTime+.01);g.gain.exponentialRampToValueAtTime(.0001,this.ctx.currentTime+d);o.connect(g).connect(this.ctx.destination);o.start();o.stop(this.ctx.currentTime+d+.02)}catch(e){}}};
+
+/* ========================= GAME STATE ========================= */
+let cfg={mode:"pve",teamA:10,teamB:10,difficulty:"normal",stage:"standard",duration:150,role:"both",aiStyle:"balanced"};
+let state=null,lastState=null,raf=0,observer=false;
+function makeStaff(team,count){const styles=["balanced","speed","quality","kitchen","hall","support"];return Array.from({length:count},(_,i)=>({id:`${team}-${i}`,name:`${team==="A"?"A":"B"}-${i+1}`,style:styles[i%styles.length],role:i%3===0?"kitchen":i%3===1?"hall":"support",x:team==="A"?25+Math.random()*20:55+Math.random()*20,y:25+Math.random()*55,target:null,energy:100,busy:0}))}
+function newState(){
+ const st=STAGES[cfg.stage],df=DIFF[cfg.difficulty],aCount=Math.max(1,+cfg.teamA),bCount=Math.max(1,+cfg.teamB);
+ return {time:cfg.duration,elapsed:0,score:{A:0,B:0},satisfaction:{A:100,B:100},combo:{A:0,B:0},orders:[],events:[],staff:{A:makeStaff("A",aCount),B:makeStaff("B",bCount)},kitchen:{A:{stock:18,plates:12,trash:0,broken:0,active:0},B:{stock:18,plates:12,trash:0,broken:0,active:0}},nextOrder:0,spawnAcc:0,eventAcc:0,log:[],ended:false,seed:Math.random(),difficulty:df,stage:st}
+}
+function addEvent(team,text){state.events.unshift({t:Date.now(),team,text});state.events=state.events.slice(0,9)}
+function logEvent(type,data){state.log.push({t:state.elapsed,type,data});if(state.log.length>5000)state.log.shift()}
+function spawnOrder(team){
+ const recipes=RECIPES, r=recipes[Math.floor(Math.random()*recipes.length)], patience=(25+Math.random()*25)/state.difficulty.customer;
+ state.orders.push({id:++state.nextOrder,team,recipeId:r.recipeId,created:state.elapsed,patience,maxPatience:patience,quality:0,status:"waiting",cook:0,customerType:Math.random()<.08?"VIP":Math.random()<.2?"FAST":"NORMAL",tip:0});
+ addEvent(team,`新規注文: ${r.name}`);logEvent("ORDER_CREATED",{team,orderId:state.nextOrder,recipeId:r.recipeId});AudioSys.play("order");
+}
+function recipe(id){return RECIPES.find(r=>r.recipeId===id)||RECIPES[0]}
+function qualityFor(order,actualTime){
+ const r=recipe(order.recipeId),ratio=actualTime/r.cookingTime;
+ if(ratio<=1.03)return "PERFECT";if(ratio<=1.18)return "GREAT";if(ratio<=1.5)return "GOOD";if(ratio<=1.9)return "NORMAL";if(ratio<=2.4)return "BAD";return "BURNT"
+}
+function qualityMult(q){return {PERFECT:1.5,GREAT:1.25,GOOD:1,NORMAL:.75,BAD:.35,BURNT:0}[q]}
+function award(team,order,q,fast){
+ const r=recipe(order.recipeId),base=r.score*qualityMult(q),speed=Math.max(0,1-order.patience/order.maxPatience),sat=({PERFECT:5,GREAT:3,GOOD:1,NORMAL:0,BAD:-5,BURNT:-12}[q]||0);
+ const combo=state.combo[team],comboMult=1+Math.min(1.2,combo*.05),tip=r.price*(q==="PERFECT"?.35:q==="GREAT"?.22:.08);
+ let points=Math.round((base+r.price*2+Math.max(0,12-speed*20))*comboMult);
+ if(fast)points+=12;
+ state.score[team]+=points;state.satisfaction[team]=Math.max(0,Math.min(100,state.satisfaction[team]+sat));
+ state.combo[team]=q==="BURNT"?0:state.combo[team]+(q==="PERFECT"?2:1);
+ order.status="served";order.quality=q;order.tip=tip;state.kitchen[team].plates--;state.kitchen[team].stock-=r.ingredients.length;
+ addEvent(team,`${q} • ${r.name} +${points}`);logEvent("FOOD_SERVED",{team,orderId:order.id,quality:q,points});AudioSys.play(q==="PERFECT"?"perfect":q==="GREAT"?"combo":"serve");
+ toast(q,q==="BURNT"||q==="BAD"?"bad":q==="PERFECT"?"perfect":"great");
+}
+function failOrder(team,order,reason){
+ state.combo[team]=0;state.satisfaction[team]=Math.max(0,state.satisfaction[team]-8);state.score[team]=Math.max(0,state.score[team]-18);
+ order.status="failed";addEvent(team,reason);logEvent("CUSTOMER_LEFT",{team,orderId:order.id,reason});AudioSys.play("miss");toast("MISS","bad")
+}
+function toast(text,cls=""){const d=document.createElement("div");d.className=`toast ${cls}`;d.textContent=text;document.getElementById("toasts").appendChild(d);setTimeout(()=>d.remove(),950)}
+function humanAction(action){
+ const team="A";const k=state.kitchen[team];let o=state.orders.find(x=>x.team===team&&x.status==="waiting");
+ if(action==="take"){if(k.stock>0){k.stock--;addEvent("A","食材を準備");logEvent("INGREDIENT_TAKEN",{team:"A"});}}
+ if(action==="cook"&&o){o.status="cooking";o.cook=0;k.active++;addEvent("A",`調理開始: ${recipe(o.recipeId).name}`);logEvent("COOK_STARTED",{team:"A",orderId:o.id});AudioSys.play("cook")}
+ if(action==="serve"){let c=state.orders.find(x=>x.team==="A"&&x.status==="cooking");if(c&&k.plates>0){const q=qualityFor(c,c.cook);award("A",c,q,true);k.active=Math.max(0,k.active-1)}}
+ if(action==="clean"){k.trash=Math.max(0,k.trash-2);state.satisfaction.A=Math.min(100,state.satisfaction.A+2);addEvent("A","厨房を片付けた")}
+ if(action==="restock"){k.stock=Math.min(30,k.stock+7);k.plates=Math.min(20,k.plates+5);addEvent("A","食材と皿を補充")}
+ if(action==="switch"){cfg.role=cfg.role==="both"?"kitchen":cfg.role==="kitchen"?"hall":"both";document.getElementById("roleLabel").textContent=cfg.role==="both"?"両方担当":cfg.role==="kitchen"?"キッチン専任":"ホール専任";saveSettings()}
+ AudioSys.play("click");
+}
+function cpuThink(team,dt){
+ const staff=state.staff[team],k=state.kitchen[team],orders=state.orders.filter(o=>o.team===team&&o.status!=="served"&&o.status!=="failed");
+ for(const s of staff){
+   s.energy=Math.min(100,s.energy+dt*.7);
+   if(s.busy>0){s.busy-=dt;continue}
+   const style=s.style;
+   let action=null;
+   const cooking=orders.find(o=>o.status==="cooking");
+   const waiting=orders.filter(o=>o.status==="waiting").sort((a,b)=>a.patience-b.patience)[0];
+   if(k.broken>0&& (style==="support"||style==="balanced")){k.broken=0;addEvent(team,"設備を修理");s.busy=1;continue}
+   if(k.plates<4){k.plates=Math.min(20,k.plates+4);s.busy=.7;addEvent(team,"皿を補充");continue}
+   if(k.stock<8){k.stock=Math.min(30,k.stock+8);s.busy=.8;addEvent(team,"食材を補充");continue}
+   if(cooking && (cooking.cook>=recipe(cooking.recipeId).cookingTime*(style==="quality"?1.03:1.16)||cooking.patience<6)){const q=qualityFor(cooking,cooking.cook);award(team,cooking,q,false);k.active=Math.max(0,k.active-1);s.busy=.25;continue}
+   if(waiting){waiting.status="cooking";waiting.cook=0;k.active++;s.busy=style==="speed"?.15:.35;logEvent("COOK_STARTED",{team,orderId:waiting.id});continue}
+   if(style==="hall"&&orders.length===0){s.busy=.4}
+ }
+}
+function update(dt){
+ if(!state||state.ended)return;
+ state.elapsed+=dt;state.time=Math.max(0,cfg.duration-state.elapsed);
+ const rate=STAGES[cfg.stage].spawn*DIFF[cfg.difficulty].customer*(1+((+cfg.teamA-1)*.055));
+ state.spawnAcc+=dt*rate;
+ while(state.spawnAcc>=4){state.spawnAcc-=4;spawnOrder("A");if(cfg.mode!=="solo"||state.elapsed>3)spawnOrder("B")}
+ state.eventAcc+=dt;
+ if(state.eventAcc>18/DIFF[cfg.difficulty].event){state.eventAcc=0;randomEvent()}
+ for(const team of ["A","B"]){
+   for(const o of state.orders.filter(x=>x.team===team&&x.status!=="served"&&x.status!=="failed")){
+     o.patience-=dt;
+     if(o.status==="cooking")o.cook+=dt;
+     if(o.patience<=0)failOrder(team,o,"客が待ちきれず退店");
+     if(o.status==="cooking"&&o.cook>recipe(o.recipeId).cookingTime*2.7)failOrder(team,o,"料理が焦げた");
+   }
+   state.orders=state.orders.filter(o=>o.status!=="served"||state.elapsed-o.created<2);
+   if(team==="B"||cfg.mode==="cvc"||cfg.mode==="pvp"||cfg.mode==="team"||cfg.mode==="solo")cpuThink(team,dt);
+ }
+ if(state.time<=0)endGame();
+ render();
+}
+function randomEvent(){
+ const team=Math.random()<.5?"A":"B",k=state.kitchen[team],events=[
+  ()=>{k.stock=Math.max(0,k.stock-5);addEvent(team,"イベント: 食材不足 (-5)")},
+  ()=>{k.plates=Math.max(0,k.plates-3);addEvent(team,"イベント: 皿不足 (-3)")},
+  ()=>{k.trash+=5;state.satisfaction[team]=Math.max(0,state.satisfaction[team]-2);addEvent(team,"イベント: ゴミ大量発生")},
+  ()=>{k.broken=1;addEvent(team,"イベント: 厨房機器トラブル")},
+  ()=>{spawnOrder(team);spawnOrder(team);addEvent(team,"イベント: 大量注文")},
+  ()=>{state.satisfaction[team]=Math.max(0,state.satisfaction[team]-4);addEvent(team,"イベント: 客の集中")}
+ ];events[Math.floor(Math.random()*events.length)]();logEvent("RANDOM_EVENT",{team});
+}
+function endGame(){
+ state.ended=true;lastState=JSON.parse(JSON.stringify(state));saveReplay(lastState);
+ document.getElementById("finalA").textContent=state.score.A.toLocaleString();document.getElementById("finalB").textContent=state.score.B.toLocaleString();
+ document.getElementById("barA").style.width=Math.min(100,state.score.A/(state.score.A+state.score.B||1)*100)+"%";document.getElementById("barB").style.width=Math.min(100,state.score.B/(state.score.A+state.score.B||1)*100)+"%";
+ document.getElementById("winner").textContent=state.score.A===state.score.B?"DRAW":state.score.A>state.score.B?"TEAM A WINS!":"TEAM B WINS!";
+ document.getElementById("resultSub").textContent=`満足度 A ${Math.round(state.satisfaction.A)}% / B ${Math.round(state.satisfaction.B)}% • ${state.log.length} events`;
+ AudioSys.play(state.score.A>=state.score.B?"victory":"miss");showScreen("result");
+}
+
+/* ========================= RENDERER ========================= */
+const canvas=document.getElementById("gameCanvas"),ctx=canvas.getContext("2d");
+function fitCanvas(c){const r=c.getBoundingClientRect(),d=Math.min(2,devicePixelRatio||1);c.width=Math.max(1,Math.floor(r.width*d));c.height=Math.max(1,Math.floor(r.height*d));return [r.width,r.height,d]}
+function drawRestaurant(c,team,mini=false){
+ const x=c.getContext("2d"),[w,h,d]=fitCanvas(c);x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,w,h);
+ const pad=mini?10:30, W=w-pad*2,H=h-pad*2;x.fillStyle="#0b1525";x.fillRect(0,0,w,h);
+ x.fillStyle=team==="A"?"#142a35":"#281b2d";x.fillRect(pad,pad,W,H);
+ const cols=mini?5:7,rows=mini?3:5;const cw=W/cols,ch=H/rows;
+ for(let yy=0;yy<rows;yy++)for(let xx=0;xx<cols;xx++){x.fillStyle=(xx+yy)%2?"#18283a":"#152438";x.fillRect(pad+xx*cw,pad+yy*ch,cw-2,ch-2)}
+ // stations
+ const stations=[["STOVE",.15,.22],["OVEN",.35,.22],["PREP",.55,.22],["PASS",.75,.22],["TABLE",.22,.7],["TABLE",.5,.7],["TABLE",.78,.7]];
+ stations.slice(0,STAGES[cfg.stage].stations).forEach((s,i)=>{const px=pad+W*s[1],py=pad+H*s[2];x.fillStyle=i%2?"#31435b":"#3d4d61";x.fillRect(px-35,py-24,70,48);x.fillStyle="#9eb2cc";x.font="10px system-ui";x.textAlign="center";x.fillText(s[0],px,py+4)});
+ const staff=state?.staff?.[team]||[];staff.slice(0,20).forEach((s,i)=>{const px=pad+W*(s.x/100),py=pad+H*(s.y/100);x.beginPath();x.arc(px,py,mini?7:11,0,Math.PI*2);x.fillStyle=team==="A"?"#5ee7c8":"#ff8294";x.fill();x.fillStyle="#07101b";x.font=`${mini?7:9}px system-ui`;x.textAlign="center";x.fillText(i+1,px,py+3)});
+ const orders=(state?.orders||[]).filter(o=>o.team===team&&o.status!=="served"&&o.status!=="failed");orders.slice(0,mini?5:9).forEach((o,i)=>{const px=pad+18+i%5*55,py=pad+45+Math.floor(i/5)*40;x.beginPath();x.arc(px,py,mini?10:15,0,Math.PI*2);x.fillStyle=o.status==="cooking"?"#ffd36a":"#5da9ff";x.fill();x.fillStyle="#06121a";x.font=`${mini?7:9}px system-ui`;x.textAlign="center";x.fillText(i+1,px,py+3)});
+}
+function render(){
+ if(!state)return;
+ document.getElementById("scoreA").textContent=state.score.A.toLocaleString();document.getElementById("scoreB").textContent=state.score.B.toLocaleString();
+ const t=Math.ceil(state.time),m=Math.floor(t/60),s=String(t%60).padStart(2,"0"),clock=document.getElementById("clock");clock.textContent=`${m}:${s}`;clock.classList.toggle("warn",t<20);
+ document.getElementById("combo").textContent=`COMBO x${state.combo.A}`;
+ document.getElementById("statsA").textContent=`満足 ${Math.round(state.satisfaction.A)}%`;document.getElementById("statsB").textContent=`満足 ${Math.round(state.satisfaction.B)}%`;
+ document.getElementById("stageLabel").textContent=state.stage.name;
+ document.getElementById("orders").innerHTML=state.orders.filter(o=>o.team==="A"&&o.status!=="served"&&o.status!=="failed").slice(0,8).map(o=>`<div class="order ${o.patience<8?"hot":""}"><span class="tag">${o.status==="cooking"?"COOK":Math.ceil(o.patience)+"s"}</span><b>${recipe(o.recipeId).name}</b><br><small>${o.customerType} • ${o.status}</small></div>`).join("")||'<div class="small">注文待ち...</div>';
+ document.getElementById("staff").innerHTML=state.staff.A.slice(0,10).map((s,i)=>`<div class="staff ${i===0?"active":""}"><span class="avatar">${i+1}</span><span><b>${s.name}</b><br><small>${s.role} / ${s.style}</small></span></div>`).join("");
+ const k=state.kitchen.A;document.getElementById("kitchenStatus").innerHTML=`<div>食材 <b>${k.stock}</b> / 30</div><div>皿 <b>${k.plates}</b> / 20</div><div>ゴミ <b>${k.trash}</b></div><div>設備 <b>${k.broken?"故障":"正常"}</b></div><div>調理中 <b>${k.active}</b></div>`;
+ document.getElementById("events").innerHTML=state.events.slice(0,7).map(e=>`<div class="small" style="padding:4px 0">[${e.team}] ${escapeHtml(e.text)}</div>`).join("");
+ drawRestaurant(canvas,"A");
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+
+/* ========================= SCREENS / UX ========================= */
+function showScreen(id){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active")}
+function startGame(){
+ readCfg();AudioSys.ensure();state=newState();document.getElementById("roleLabel").textContent=cfg.role==="both"?"両方担当":cfg.role==="kitchen"?"キッチン専任":"ホール専任";showScreen("game");render();cancelAnimationFrame(raf);let last=performance.now();function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;update(dt);raf=requestAnimationFrame(loop)}raf=requestAnimationFrame(loop)
+}
+function readCfg(){cfg.mode=document.getElementById("mode").value;cfg.teamA=+document.getElementById("teamA").value;cfg.teamB=+document.getElementById("teamB").value;cfg.difficulty=document.getElementById("difficulty").value;cfg.stage=document.getElementById("stage").value;cfg.duration=+document.getElementById("duration").value;cfg.role=document.getElementById("role").value;cfg.aiStyle=document.getElementById("aiStyle").value;saveSettings()}
+function saveSettings(){try{localStorage.setItem("rb_settings",JSON.stringify(cfg))}catch(e){}}
+function loadSettings(){try{const s=JSON.parse(localStorage.getItem("rb_settings"));if(s)cfg={...cfg,...s}}catch(e){}}
+function saveReplay(s){try{localStorage.setItem("rb_last_replay",JSON.stringify(s.log))}catch(e){}}
+function openModal(title,body){document.getElementById("modalContent").innerHTML=`<h2>${title}</h2>${body}`;document.getElementById("modal").classList.add("open")}
+function recipeManager(){
+ const rows=RECIPES.map(r=>`<div class="recipeRow"><div><b>${escapeHtml(r.name)}</b><div class="small">${escapeHtml(r.recipeId)} • ${r.steps.join(" → ")} • ${r.cookingTime}s • ¥${r.price}</div></div><span class="pill">v${r.version}</span></div>`).join("");
+ const pack=JSON.stringify({format:"restaurant-recipe-pack",version:1,recipes:RECIPES},null,2);
+ openModal("Recipe Pack",`<div class="notice">開発用のレシピ管理画面。レシピはデータ駆動で、JSONとして書き出せます。</div>${rows}<h3>Recipe Pack JSON</h3><div class="codebox">${escapeHtml(pack)}</div>`);
+}
+function rbSameOriginSignal(){
+ const explicit=(NETWORK.SIGNALING_URL||localStorage.getItem("rb_signal")||"").trim().replace(/\/+$/,'');
+ if(explicit)return explicit;
+ if(location.protocol==="http:"||location.protocol==="https:") return (location.protocol==="https:"?"wss://":"ws://")+location.host;
+ return "";
+}
+function rbRandomRoom(){return Array.from(crypto.getRandomValues(new Uint8Array(6))).map(x=>x.toString(36).padStart(2,"0")).join("").slice(0,6).toUpperCase()}
+async function rbFetchRooms(){
+ const signal=rbSameOriginSignal(); if(!signal)return [];
+ try{const base=signal.replace(/^wss:/,'https:').replace(/^ws:/,'http:');const r=await fetch(base+'/api/rooms',{cache:'no-store'});if(!r.ok)throw new Error('rooms '+r.status);const j=await r.json();return Array.isArray(j.rooms)?j.rooms:[]}catch(e){console.warn('room list',e);return []}
+}
+function rbRoomRows(rooms){
+ if(!rooms.length)return '<div class="notice">現在公開中の部屋はありません。<br>「部屋を作る」か「ランダムマッチ」を押してください。</div>';
+ return rooms.map(r=>`<div class="recipeRow" style="display:flex;align-items:center;gap:12px"><div style="flex:1"><b>🏠 ${escapeHtml(r.name||r.id)}</b><div class="small">${escapeHtml(r.id)}　•　${r.players||0}/${r.maxPlayers||20}人　•　${r.status==='playing'?'対戦中':'待機中'}</div></div><button class="btn primary" data-rb-join-room="${escapeHtml(r.id)}">参加</button></div>`).join('');
+}
+async function rbRefreshRoomList(){
+ const box=document.getElementById('rbRoomList');if(!box)return;box.innerHTML='<div class="notice">部屋を検索中…</div>';const rooms=await rbFetchRooms();if(!document.getElementById('rbRoomList'))return;box.innerHTML=rbRoomRows(rooms);}
+async function rbRandomMatch(){
+ const rooms=await rbFetchRooms();const candidates=rooms.filter(r=>(r.players||0)<(r.maxPlayers||20)&&r.status!=='playing');
+ if(candidates.length){candidates.sort((a,b)=>(b.players||0)-(a.players||0));return rbConnectToRoom(candidates[0].id)}
+ return rbCreateRoom();
+}
+function networkModal(){
+ const signal=rbSameOriginSignal();
+ openModal("オンライン対戦",`<div class="notice"><b>かんたんオンライン対戦</b><br>部屋一覧から選ぶか、ランダムマッチで自動参加できます。シグナリングは公開サイト側が担当し、対戦中のゲームデータはWebRTCでプレイヤー同士が直接通信します。</div><div class="form"><div class="field"><label>プレイヤー名</label><input id="rbName" value="${escapeHtml(RB_PEER_NAME)}" maxlength="30" placeholder="名前"></div></div><div class="actions"><button class="btn primary" data-rb-random>🎲 ランダムマッチ</button><button class="btn gold" data-rb-create>🏠 部屋を作る</button><button class="btn" data-rb-refresh>↻ 一覧を更新</button><button class="btn" data-rb-disconnect>切断</button></div><div id="rbNetStatus" class="notice">${RBNet?.connected?`接続中: ${escapeHtml(RBNet.room)} / ${RBNet.peers.size+1}人`:signal?'オンライン接続可能':'このページを公開サイトから開いてください'}</div><h3>公開中の部屋</h3><div id="rbRoomList"><div class="notice">読み込み中…</div></div><h3>現在の参加者</h3><div id="rbPeers">${RBNet?Array.from(RBNet.peers.values()).map(p=>`<div class="staff"><span class="avatar">👤</span><span>${escapeHtml(p.name||p.id.slice(0,6))}<br><small>${escapeHtml(p.team||"TEAM A")}</small></span></div>`).join(""):""}</div>`);
+ rbRefreshRoomList();
+}
+function rbConnectToRoom(room){
+ const url=rbSameOriginSignal(); room=(room||"").trim().replace(/[^A-Za-z0-9_-]/g,"").slice(0,40);
+ RB_PEER_NAME=(document.getElementById("rbName")?.value||RB_PEER_NAME).trim().slice(0,30)||"Player";
+ if(!url)return toast("公開サイトから開いてください。","bad"); if(!room)return toast("ルームコードを入力してください","bad");
+ localStorage.setItem("rb_signal",url);localStorage.setItem("rb_room",room);localStorage.setItem("rb_peer_name",RB_PEER_NAME);
+ return RBNet.connect(url,room).then(()=>{toast(`ルーム ${room} に接続しました`);networkModal()}).catch(err=>{console.error(err);toast("接続に失敗しました: "+err.message,"bad")});
+}
+function rbCreateRoom(){const room=rbRandomRoom();document.getElementById("rbRoom").value=room;return rbConnectToRoom(room)}
+function rbJoinRoom(){return rbConnectToRoom(document.getElementById("rbRoom")?.value)}
+function rbDisconnect(){RBNet.disconnect();toast("オンライン接続を切断しました");networkModal()}
+document.addEventListener("click",e=>{if(e.target.closest("[data-rb-create]"))rbCreateRoom();if(e.target.closest("[data-rb-join]"))rbJoinRoom();if(e.target.closest("[data-rb-join-room]"))rbConnectToRoom(e.target.closest("[data-rb-join-room]").dataset.rbJoinRoom);if(e.target.closest("[data-rb-random]"))rbRandomMatch();if(e.target.closest("[data-rb-refresh]"))rbRefreshRoomList();if(e.target.closest("[data-rb-disconnect]"))rbDisconnect()});
+
+const RBNet={peerId:crypto.randomUUID(),ws:null,room:"",url:"",pcs:new Map(),peers:new Map(),cursors:new Map(),connected:false,rxChunks:new Map(),
+ connect(url,room){this.disconnect();this.url=url;this.room=room;return new Promise((resolve,reject)=>{const ws=new WebSocket(url+"/room/"+encodeURIComponent(room));this.ws=ws;let settled=false;ws.onopen=()=>{this.connected=true;this.sendWS({type:"hello",peerId:this.peerId,name:RB_PEER_NAME,manifest:{recipes:recipeManifest(),assets:assetManifest()}});settled=true;resolve()};ws.onerror=()=>{if(!settled)reject(new Error("signaling WebSocket error"))};ws.onclose=()=>{this.connected=false;this.pcs.forEach(pc=>pc.close());this.pcs.clear();this.peers.clear();document.getElementById("roomHud")?.replaceChildren(document.createTextNode("OFFLINE"))};ws.onmessage=e=>this.onSignal(e.data)})},
+ disconnect(){try{this.ws?.close()}catch(e){}this.ws=null;this.pcs.forEach(pc=>pc.close());this.pcs.clear();this.peers.clear();this.cursors.clear();this.connected=false},
+ sendWS(m){if(this.ws?.readyState===1)this.ws.send(JSON.stringify(m))},
+ makePC(remote,initiator){if(this.pcs.has(remote))return this.pcs.get(remote);const pc=new RTCPeerConnection({iceServers:NETWORK.ICE_SERVERS});const entry={pc,dc:null,name:"",team:"A"};this.pcs.set(remote,entry);pc.onicecandidate=e=>{if(e.candidate)this.sendWS({type:"signal",to:remote,from:this.peerId,data:{kind:"ice",candidate:e.candidate}})};pc.onconnectionstatechange=()=>{if(["failed","closed","disconnected"].includes(pc.connectionState)){this.pcs.delete(remote);this.peers.delete(remote)}};if(initiator){entry.dc=pc.createDataChannel("rb",{ordered:true});this.bindDC(remote,entry.dc)}else pc.ondatachannel=e=>this.bindDC(remote,e.channel);if(initiator)pc.createOffer().then(o=>pc.setLocalDescription(o)).then(()=>this.sendWS({type:"signal",to:remote,from:this.peerId,data:{kind:"offer",offer:pc.localDescription}}));return entry},
+ bindDC(remote,dc){const entry=this.pcs.get(remote);if(!entry)return;entry.dc=dc;dc.onopen=()=>{this.sendPeer(remote,{type:"hello_peer",id:this.peerId,name:RB_PEER_NAME,team:"A",manifest:{recipes:recipeManifest(),assets:assetManifest()}});this.sendPeer(remote,{type:"cursor",x:window.RBMouse?.x||0,y:window.RBMouse?.y||0,team:"A",name:RB_PEER_NAME,player:true});};dc.onmessage=e=>this.onPeer(remote,e.data);dc.onclose=()=>this.peers.delete(remote)},
+ sendPeer(id,msg){const d=this.pcs.get(id)?.dc;if(d?.readyState==="open"){const raw=JSON.stringify(msg);if(raw.length<180000)d.send(raw);else this.sendChunked(id,raw)}},
+ sendChunked(id,raw){const size=60000,total=Math.ceil(raw.length/size),cid=crypto.randomUUID();for(let i=0;i<total;i++)this.pcs.get(id)?.dc?.send(JSON.stringify({type:"chunk",cid,i,total,data:raw.slice(i*size,(i+1)*size)}))},
+ broadcast(msg,except){for(const id of this.pcs.keys())if(id!==except)this.sendPeer(id,msg)},
+ onPeer(remote,raw){let m;try{m=JSON.parse(raw)}catch(e){return}if(m.type==="chunk"){let b=this.rxChunks.get(m.cid)||{parts:[],total:m.total};b.parts[m.i]=m.data;b.total=m.total;this.rxChunks.set(m.cid,b);if(b.parts.filter(Boolean).length===b.total){const full=b.parts.join("");this.rxChunks.delete(m.cid);this.onPeer(remote,full)}return}if(!m||typeof m.type!=="string")return;if(m.type==="hello_peer"){this.peers.set(remote,{id:remote,name:m.name||remote.slice(0,6),team:m.team||"A"});this.sendPeer(remote,{type:"manifest",recipes:recipeManifest(),assets:assetManifest()});return}if(m.type==="manifest"){this.syncMissing(remote,m);return}if(m.type==="recipe_data"&&validateRecipe(m.recipe)){const r=m.recipe,old=RECIPES.findIndex(x=>x.recipeId===r.recipeId);if(old<0)RECIPES.push(r);else if(r.version>RECIPES[old].version)RECIPES[old]=r;rbSaveData();return}if(m.type==="asset_data"&&validateAsset(m.assetId,m.data)){ASSETS[m.assetId]={assetId:m.assetId,version:m.version||1,hash:m.hash||hashObject({id:m.assetId,data:m.data}),type:m.assetType||"image",data:m.data};rbSaveData();return}if(m.type==="cursor"){this.cursors.set(remote,{...m,last:performance.now()});return}if(m.type==="chat"){addEvent("A",`💬 ${m.name||remote.slice(0,6)}: ${m.text||""}`);return}},
+ syncMissing(remote,m){const haveR=new Map(recipeManifest().map(x=>[x.recipeId,x.hash]));for(const r of (m.recipes||[])){if(!haveR.has(r.recipeId)||haveR.get(r.recipeId)!==r.hash){const full=RECIPES.find(x=>x.recipeId===r.recipeId);if(full)this.sendPeer(remote,{type:"recipe_data",recipe:full})}}const haveA=new Map(assetManifest().map(x=>[x.assetId,x.hash]));for(const a of (m.assets||[])){if(!haveA.has(a.assetId)||haveA.get(a.assetId)!==a.hash){const data=ASSETS[a.assetId]?.data;if(data)this.sendChunked(remote,JSON.stringify({type:"asset_data",assetId:a.assetId,version:1,hash:a.hash,assetType:"image",data}))}}},
+ onSignal(raw){let m;try{m=JSON.parse(raw)}catch(e){return}if(m.type==="peer_list"){for(const p of m.peers||[])if(p.id!==this.peerId){this.peers.set(p.id,p);if(this.peerId<p.id)this.makePC(p.id,true)}return}if(m.type==="peer_joined"){const p=m.peer;if(p?.id&&p.id!==this.peerId){this.peers.set(p.id,p);if(this.peerId<p.id)this.makePC(p.id,true)}return}if(m.type==="peer_left"){this.pcs.get(m.peerId)?.pc.close();this.pcs.delete(m.peerId);this.peers.delete(m.peerId);this.cursors.delete(m.peerId);return}if(m.type==="signal"){const from=m.from, data=m.data, e=this.makePC(from,false),pc=e.pc;if(data.kind==="offer"){pc.setRemoteDescription(data.offer).then(()=>pc.createAnswer()).then(a=>pc.setLocalDescription(a)).then(()=>this.sendWS({type:"signal",to:from,from:this.peerId,data:{kind:"answer",answer:pc.localDescription}})).catch(console.error)}else if(data.kind==="answer"){pc.setRemoteDescription(data.answer).catch(console.error)}else if(data.kind==="ice"){pc.addIceCandidate(data.candidate).catch(()=>{})}}},
+ updateCursor(x,y){const m={type:"cursor",x,y,team:"A",name:RB_PEER_NAME,player:true};this.cursors.set(this.peerId,{...m,last:performance.now()});if(this.connected)this.broadcast(m)},
+ chat(text){if(this.connected)this.broadcast({type:"chat",text,name:RB_PEER_NAME})}
+};
+window.RBNet=RBNet;
+window.RBMouse={x:0,y:0};
+canvas.addEventListener("mousemove",e=>{const r=canvas.getBoundingClientRect();RBMouse.x=e.clientX-r.left;RBMouse.y=e.clientY-r.top;RBNet.updateCursor(RBMouse.x,RBMouse.y)});
+canvas.addEventListener("mouseleave",()=>RBNet.updateCursor(-9999,-9999));
+
+/* CPU + human mixed team cursors. Every CPU staff member gets a visible cursor marker. */
+const rbOldDrawRestaurant=drawRestaurant;
+drawRestaurant=function(c,team,mini=false){rbOldDrawRestaurant(c,team,mini);const x=c.getContext("2d");const r=c.getBoundingClientRect();const w=r.width,h=r.height;const pad=mini?10:30,W=w-pad*2,H=h-pad*2;const staff=state?.staff?.[team]||[];x.save();x.font="bold 10px system-ui";staff.slice(0,20).forEach((s,i)=>{if(team!=="A"&&team!=="B")return;const px=pad+W*(s.x/100),py=pad+H*(s.y/100);x.strokeStyle=team==="A"?"#5ee7c8":"#ff8294";x.lineWidth=2;x.beginPath();x.moveTo(px,py-15);x.lineTo(px+9,py-4);x.lineTo(px+2,py-3);x.lineTo(px+5,py+6);x.stroke();if(!mini){x.fillStyle="#eef5ff";x.fillText(`${s.player?"YOU":"CPU"} ${i+1}`,px+8,py-9)}});if(team==="A"&&!mini&&RBNet.cursors.size){for(const [id,m] of RBNet.cursors){if(id===RBNet.peerId||m.x<0)continue;const px=Math.max(0,Math.min(w,m.x)),py=Math.max(0,Math.min(h,m.y));x.strokeStyle="#ffd36a";x.lineWidth=2;x.beginPath();x.moveTo(px,py);x.lineTo(px+11,py+13);x.lineTo(px+4,py+11);x.lineTo(px+5,py+19);x.stroke();x.fillStyle="#ffd36a";x.fillText(m.name||id.slice(0,6),px+12,py+10)}}x.restore()};
+
+/* Mixed human/CPU setup: use the selected team size, with slot 0 human unless CVC. */
+const rbOldNewState=newState;
+newState=function(){const st=rbOldNewState();if(cfg.mode==="solo"){st.staff.B=[]}else{const humanCount=Math.max(1,Math.min(st.staff.A.length,cfg.mode==="cvc"?0:1));st.staff.A.forEach((s,i)=>s.player=i<humanCount);st.staff.B.forEach(s=>s.player=false)}return st};
+
+/* Replace title recipe action with in-game-capable manager. */
+const rbOldStartGame=startGame;
+startGame=function(){rbOldStartGame();setTimeout(()=>{const box=document.querySelector("#game .hudBox");if(box&&!box.querySelector('[data-action="data"]'))box.insertAdjacentHTML("beforeend",'<div class="row" style="margin-top:7px"><button class="action" data-action="data">レシピ・食材・画像</button><button class="action" data-action="network">ルーム</button></div>');document.getElementById("roomHud")&&(document.getElementById("roomHud").textContent=RBNet.connected?`ROOM ${RBNet.room}`:"OFFLINE")},0)};
+
+/* Extend the existing action router without removing any old actions. */
+document.addEventListener("click",e=>{const a=e.target.closest("[data-action]");if(!a)return;const act=a.dataset.action;if(act==="data")rbManager("recipe");if(act==="network")networkModal();if(act==="onlineQuick")networkModal()});
+setInterval(()=>{if(RBNet.connected){const hud=document.getElementById("roomHud");if(hud)hud.textContent=`ROOM ${RBNet.room} • ${RBNet.peers.size+1}人`;if(state&&!state.ended)RBNet.updateCursor(RBMouse.x,RBMouse.y)}},100);
+
+
+/* ONLINE MATCH EVENT SYNC: signaling is only for connection setup; gameplay uses P2P. */
+const rbOriginalHumanAction=humanAction;
+humanAction=function(action){rbOriginalHumanAction(action);if(window.RBNet?.connected)RBNet.broadcast({type:"game_action",action,from:RBNet.peerId,t:Date.now()})};
+const rbOriginalOnPeer=RBNet.onPeer.bind(RBNet);
+RBNet.onPeer=function(remote,raw){rbOriginalOnPeer(remote,raw);try{const m=JSON.parse(raw);if(m?.type==="game_action"&&typeof m.action==="string"&&["take","cook","serve","clean","restock","switch"].includes(m.action)&&state&&!state.ended)rbOriginalHumanAction(m.action)}catch(e){}};
+window.RestaurantBattleAPI={...(window.RestaurantBattleAPI||{}),recipes:RECIPES,ingredients:INGREDIENTS,assets:ASSETS,Net:RBNet,addRecipe:r=>{if(validateRecipe(r)){RECIPES.push(r);rbSaveData();rbBroadcastData();}},saveData:rbSaveData};
+</script>
+</div>
+</body>
+</html>

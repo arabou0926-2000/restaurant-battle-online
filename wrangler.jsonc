@@ -1,0 +1,15 @@
+{
+  "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema.json",
+  "name": "restaurant-battle-online",
+  "main": "restaurant_battle_worker.js",
+  "compatibility_date": "2026-09-07",
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": true },
+  "durable_objects": { "bindings": [
+    { "name": "ROOMS", "class_name": "RestaurantBattleRoom" },
+    { "name": "DIRECTORY", "class_name": "RoomDirectory" }
+  ] },
+  "exports": {
+    "RestaurantBattleRoom": { "type": "durable-object", "storage": "sqlite" },
+    "RoomDirectory": { "type": "durable-object", "storage": "sqlite" }
+  }
+}
