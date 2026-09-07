@@ -7,27 +7,39 @@ const ROOM_RE = /^[A-Za-z0-9_-]{1,40}$/;
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (url.pathname === "/" || url.pathname === "/health") {
+
+    // Health check
+    if (url.pathname === "/health") {
       return new Response("Restaurant Battle signaling server OK", {
         headers: { "content-type": "text/plain; charset=utf-8" },
       });
     }
 
-    const m = url.pathname.match(/^\/room\/([A-Za-z0-9_-]{1,40})$/);
-    if (!m) return new Response("Not found", { status: 404 });
-    if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
-      return new Response("WebSocket Upgrade required", { status: 426 });
+    // Public room directory
+    if (url.pathname === "/api/rooms" && request.method === "GET") {
+      const id = env.DIRECTORY.idFromName("global");
+      return env.DIRECTORY.get(id).fetch(new Request("https://directory/rooms"));
     }
 
-    const roomId = m[1];
-    const id = env.ROOMS.idFromName(roomId);
-    return env.ROOMS.get(id).fetch(request);
+    const m = url.pathname.match(/^\/room\/([A-Za-z0-9_-]{1,40})$/);
+    if (m) {
+      if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
+        return new Response("WebSocket Upgrade required", { status: 426 });
+      }
+      const roomId = m[1];
+      const id = env.ROOMS.idFromName(roomId);
+      return env.ROOMS.get(id).fetch(request);
+    }
+
+    // Serve the actual game from /public instead of returning Hello World.
+    return env.ASSETS.fetch(request);
   },
 };
 
 export class RestaurantBattleRoom extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
+    this.env = env;
   }
 
   async fetch(request) {
@@ -43,9 +55,28 @@ export class RestaurantBattleRoom extends DurableObject {
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
     this.ctx.acceptWebSocket(server);
+    this.roomId = new URL(request.url).pathname.split("/")[2] || "";
     server.serializeAttachment({ id: crypto.randomUUID(), peerId: null, name: "", team: "A" });
 
     return new Response(null, { status: 101, webSocket: client });
+  }
+
+  updateDirectory() {
+    if (!this.env?.DIRECTORY || !this.roomId) return;
+    const sockets = this.ctx.getWebSockets();
+    const players = sockets.length;
+    const id = this.env.DIRECTORY.idFromName("global");
+    this.env.DIRECTORY.get(id).fetch(new Request("https://directory/update", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        id: this.roomId,
+        name: this.roomId,
+        players,
+        maxPlayers: MAX_PEERS,
+        status: "waiting",
+      }),
+    })).catch(() => {});
   }
 
   broadcast(obj, except) {
@@ -80,6 +111,8 @@ export class RestaurantBattleRoom extends DurableObject {
         team: m.team === "B" ? "B" : "A",
       });
 
+      this.updateDirectory();
+
       try {
         ws.send(JSON.stringify({ type: "peer_list", peers }));
       } catch (_) {}
@@ -112,10 +145,64 @@ export class RestaurantBattleRoom extends DurableObject {
   webSocketClose(ws) {
     const state = ws.deserializeAttachment() || {};
     if (state.peerId) this.broadcast({ type: "peer_left", peerId: state.peerId }, ws);
+    this.updateDirectory();
   }
 
   webSocketError(ws) {
     const state = ws.deserializeAttachment() || {};
     if (state.peerId) this.broadcast({ type: "peer_left", peerId: state.peerId }, ws);
+    this.updateDirectory();
+  }
+}
+
+export class RoomDirectory extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env);
+    this.env = env;
+  }
+
+  async fetch(request) {
+    const url = new URL(request.url);
+    if (request.method === "GET" && url.pathname === "/rooms") {
+      const rooms = await this.ctx.storage.list({ prefix: "room:" });
+      const now = Date.now();
+      const out = [];
+      for (const [key, value] of rooms) {
+        if (!value || now - (value.updatedAt || 0) > 30000) {
+          await this.ctx.storage.delete(key);
+          continue;
+        }
+        out.push(value);
+      }
+      out.sort((a, b) => (b.players || 0) - (a.players || 0));
+      return Response.json({ rooms: out });
+    }
+
+    if (request.method === "POST" && url.pathname === "/update") {
+      let data;
+      try { data = await request.json(); } catch (_) {
+        return new Response("Bad JSON", { status: 400 });
+      }
+      if (!data?.id || !ROOM_RE.test(String(data.id))) {
+        return new Response("Bad room id", { status: 400 });
+      }
+      const players = Math.max(0, Math.min(MAX_PEERS, Number(data.players) || 0));
+      const key = `room:${data.id}`;
+      if (players === 0) {
+        await this.ctx.storage.delete(key);
+      } else {
+        await this.ctx.storage.put(key, {
+          id: String(data.id),
+          name: String(data.name || data.id).slice(0, 40),
+          players,
+          maxPlayers: MAX_PEERS,
+          status: data.status === "playing" ? "playing" : "waiting",
+          updatedAt: Date.now(),
+        });
+      }
+      return Response.json({ ok: true });
+    }
+
+    return new Response("Not found", { status: 404 });
   }
 }
