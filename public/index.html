@@ -10,7 +10,7 @@
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:radial-gradient(circle at 50% 0,#162845,#08101d 55%);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 button,input,select{font:inherit}button{border:0;color:inherit;cursor:pointer}
 #app{width:100%;height:100%;position:relative}
-.screen{position:absolute;inset:0;display:none}.screen.active{display:flex}
+.screen{position:absolute;inset:0;display:none}.screen.active{display:flex!important}
 #title{align-items:center;justify-content:center;padding:24px}
 .titleCard{width:min(980px,96vw);padding:34px;border:1px solid #ffffff18;border-radius:28px;background:linear-gradient(145deg,#13213aee,#0b1323ee);box-shadow:var(--shadow);text-align:center}
 .logo{font-size:clamp(34px,6vw,72px);font-weight:1000;letter-spacing:-.06em;line-height:.95}
@@ -406,7 +406,7 @@ function rbConnectToRoom(room){
  localStorage.setItem("rb_signal",url);localStorage.setItem("rb_room",room);localStorage.setItem("rb_peer_name",RB_PEER_NAME);
  return RBNet.connect(url,room).then(()=>{toast(`ルーム ${room} に接続しました`);networkModal()}).catch(err=>{console.error(err);toast("接続に失敗しました: "+err.message,"bad")});
 }
-function rbCreateRoom(){const room=rbRandomRoom();document.getElementById("rbRoom").value=room;return rbConnectToRoom(room)}
+function rbCreateRoom(){const room=rbRandomRoom();return rbConnectToRoom(room)}
 function rbJoinRoom(){return rbConnectToRoom(document.getElementById("rbRoom")?.value)}
 function rbDisconnect(){RBNet.disconnect();toast("オンライン接続を切断しました");networkModal()}
 document.addEventListener("click",e=>{if(e.target.closest("[data-rb-create]"))rbCreateRoom();if(e.target.closest("[data-rb-join]"))rbJoinRoom();if(e.target.closest("[data-rb-join-room]"))rbConnectToRoom(e.target.closest("[data-rb-join-room]").dataset.rbJoinRoom);if(e.target.closest("[data-rb-random]"))rbRandomMatch();if(e.target.closest("[data-rb-refresh]"))rbRefreshRoomList();if(e.target.closest("[data-rb-disconnect]"))rbDisconnect()});
@@ -444,7 +444,28 @@ const rbOldStartGame=startGame;
 startGame=function(){rbOldStartGame();setTimeout(()=>{const box=document.querySelector("#game .hudBox");if(box&&!box.querySelector('[data-action="data"]'))box.insertAdjacentHTML("beforeend",'<div class="row" style="margin-top:7px"><button class="action" data-action="data">レシピ・食材・画像</button><button class="action" data-action="network">ルーム</button></div>');document.getElementById("roomHud")&&(document.getElementById("roomHud").textContent=RBNet.connected?`ROOM ${RBNet.room}`:"OFFLINE")},0)};
 
 /* Extend the existing action router without removing any old actions. */
-document.addEventListener("click",e=>{const a=e.target.closest("[data-action]");if(!a)return;const act=a.dataset.action;if(act==="data")rbManager("recipe");if(act==="network")networkModal();if(act==="onlineQuick")networkModal()});
+document.addEventListener("click",e=>{
+ const a=e.target.closest("[data-action]");
+ if(!a)return;
+ const act=a.dataset.action;
+ e.preventDefault();
+ AudioSys.play("click");
+ try{
+  if(act==="onlineQuick"||act==="network"){networkModal();return}
+  if(act==="quick"){cfg.mode="pve";showScreen("setup");return}
+  if(act==="setup"){showScreen("setup");return}
+  if(act==="observe"){observer=true;showScreen("observe");return}
+  if(act==="recipe"){recipeManager();return}
+  if(act==="howto"){openModal("遊び方",`<div class="notice"><b>注文を受ける → 調理 → 提供 → 片付け・補充</b><br>下のアクションボタンで店舗を運営します。時間内により高いスコアを獲得したチームが勝利です。</div>`);return}
+  if(act==="back"||act==="title"){cancelAnimationFrame(raf);showScreen("title");return}
+  if(act==="start"){startGame();return}
+  if(["take","cook","serve","clean","restock","switch"].includes(act)){humanAction(act);return}
+  if(act==="closeModal"){document.getElementById("modal").classList.remove("open");return}
+  if(act==="rematch"){startGame();return}
+  if(act==="replay"){if(lastState){observer=true;showScreen("observe");render();}else openModal("リプレイ","まだリプレイデータがありません。");return}
+ }catch(err){console.error(err);toast("操作中にエラーが発生しました","bad")}
+});
+document.getElementById("fullscreenBtn")?.addEventListener("click",()=>{document.documentElement.requestFullscreen?.().catch(()=>{})});
 setInterval(()=>{if(RBNet.connected){const hud=document.getElementById("roomHud");if(hud)hud.textContent=`ROOM ${RBNet.room} • ${RBNet.peers.size+1}人`;if(state&&!state.ended)RBNet.updateCursor(RBMouse.x,RBMouse.y)}},100);
 
 
